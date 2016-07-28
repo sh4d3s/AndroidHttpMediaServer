@@ -4,23 +4,6 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
-
-    <TextView android:text="@string/hello_world" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/textView"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        tools:text="Select song to play" />
-
-    <Button
-        android:text="Pause"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/play"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@+id/prev"
-        android:layout_toEndOf="@+id/prev" />
-
     <Button
         android:text="Next"
         android:layout_width="wrap_content"
@@ -28,16 +11,30 @@
         android:id="@+id/next"
         android:layout_alignParentBottom="true"
         android:layout_toRightOf="@+id/play"
-        android:layout_toEndOf="@+id/play" />
+        android:layout_toEndOf="@+id/play"
+        android:elevation="0dp"
+        style="@style/Widget.AppCompat.Button.Colored" />
 
     <Button
-        android:text="Equalizer"
+        android:background="@drawable/eq"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/next"
-        android:layout_toRightOf="@+id/next"
         android:layout_toEndOf="@+id/next"
-        android:id="@+id/eqi" />
+        android:id="@+id/eqi"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:elevation="0dp"
+        android:layout_toRightOf="@+id/next" />
+
+    <Button
+        android:text="Play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/play"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/prev"
+        android:layout_toEndOf="@+id/prev"
+        style="@style/Widget.AppCompat.Button.Colored" />
 
     <Button
         android:text="Previous"
@@ -46,17 +43,36 @@
         android:id="@+id/prev"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        style="@style/Widget.AppCompat.Button.Colored" />
+
+    <TextView
+        android:text="NowPlayig: "
+        android:layout_width="wrap_content"
+        android:layout_height="25dp"
+        android:layout_above="@+id/next"
+        android:id="@+id/now"
+        android:padding="2dp"
+        android:singleLine="true"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:freezesText="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textAppearance="@style/TextAppearance.AppCompat" />
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/textView"
-        android:layout_toStartOf="@+id/eqi"
-        android:layout_marginTop="24dp"
-        android:layout_above="@+id/play"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/now"
         android:id="@+id/list" />
 
 </RelativeLayout>

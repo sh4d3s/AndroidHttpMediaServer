@@ -1,12 +1,13 @@
 package server.http.android.androidhttpserver;
 
 import android.content.DialogInterface;
-import android.os.AsyncTask;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,136 +19,119 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
-import java.io.File;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import server.http.android.androidhttpserver.server.MyServer;
 
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, View.OnClickListener {
 
     private MyServer server;
-    String path;
-    Button eqi,pp,back,next;
-    int vol,bas;
+    Button eqi, pp, back, next;
+    int vol, bas;
     String play;
     TextView tv;
-    int cur,max;
+    int cur, max;
+    List<String> names;
+    List<String> list;
+    TextView textView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        eqi=(Button)findViewById(R.id.eqi);
-        pp=(Button)findViewById(R.id.play);
-        next=(Button)findViewById(R.id.next);
-        back=(Button)findViewById(R.id.prev);
-        vol=0;
-        bas=0;
-        cur=0;
-        play="true";
-        tv=(TextView)findViewById(R.id.textView);
-        path = Environment.getExternalStorageDirectory().toString()+"/music";
-        File f = new File(path);
-        Log.d("Files", "Path: " + path);
-        List<String> list =new ArrayList<String>();
-        final File file[] = f.listFiles();
-        Log.d("Files", "Size: "+ file.length);
-        for (int i=0; i < file.length; i++)
-        {
-            list.add(file[i].getName());
-            Log.d("Files", "FileName:" + file[i].getName());
-        }
-        max=file.length;
-        ArrayAdapter<String> itemsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,list);
-        ListView listView=(ListView)findViewById(R.id.list);
+        eqi = (Button) findViewById(R.id.eqi);
+        pp = (Button) findViewById(R.id.play);
+        next = (Button) findViewById(R.id.next);
+        back = (Button) findViewById(R.id.prev);
+        vol = 0;
+        bas = 0;
+        cur = 0;
+        textView = (TextView) findViewById(R.id.now);
+        textView.setSelected(true);
+        play = "true";
+        textView.setText("Now Playing: Nothing. Select a song to play!");
+        list = new ArrayList<String>();
+        names = new ArrayList<String>();
+        scanSdcard();
+        ArrayAdapter<String> itemsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names);
+        ListView listView = (ListView) findViewById(R.id.list);
         listView.setAdapter(itemsAdapter);
         listView.setOnItemClickListener(this);
-        eqi.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                ShowDialog();
-            }
-        });
-        pp.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                try
-                {
-                    if(play.equals("true")) {
-                        play = "false";
-                        pp.setText("PLAY");
-                    }
-                    else {
-                        play = "true";
-                        pp.setText("PAUSE");
-                    }
-                    new Task().execute(vol,bas,play);
-                }
-                catch(Exception ex)
-                {
-                }
-            }
-        });
-        back.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if(cur==0)
-                    cur=max-1;
-                else
-                    cur--;
-                String stuff=file[cur].getName();
-                try {
-                    server.PATH=path+"/"+stuff;
-                    server = new MyServer(path+"/"+stuff);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
-            }
-        });
-        next.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if(cur==max-1)
-                    cur=0;
-                else
-                    cur++;
-                String stuff=file[cur].getName();
-                try {
-                    server.PATH=path+"/"+stuff;
-                    server = new MyServer(path+"/"+stuff);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
+        eqi.setOnClickListener(this);
+        pp.setOnClickListener(this);
+        back.setOnClickListener(this);
+        next.setOnClickListener(this);
     }
-    public void ShowDialog()
-    {
+    private void scanSdcard(){
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+        String[] projection = {
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DATA,
+                MediaStore.Audio.Media.DISPLAY_NAME,
+                MediaStore.Audio.Media.DURATION
+        };
+        final String sortOrder = MediaStore.Audio.AudioColumns.TITLE + " COLLATE LOCALIZED ASC";
+
+        Cursor cursor = null;
+        try {
+            Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+            cursor = this.getContentResolver().query(uri, projection, selection, null, sortOrder);
+            if( cursor != null){
+                cursor.moveToFirst();
+                while( !cursor.isAfterLast() ){
+                    String title = cursor.getString(0);
+                    String artist = cursor.getString(1);
+                    String path = cursor.getString(2);
+                    String displayName  = cursor.getString(3);
+                    String songDuration = cursor.getString(4);
+                    cursor.moveToNext();
+                    if(path!=null){
+                        list.add(path);
+                        names.add(displayName);
+                    }
+
+                }
+
+            }
+
+        } catch (Exception e) {
+
+        }finally{
+            if( cursor != null){
+                cursor.close();
+            }
+        }
+    }
+
+    public void showDialog() {
         final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
         final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
 
         final View Viewlayout = inflater.inflate(R.layout.activity_dialog,
                 (ViewGroup) findViewById(R.id.layout_dialog));
 
-        final TextView item1 = (TextView)Viewlayout.findViewById(R.id.txtItem1); // txtItem1
+        final TextView item1 = (TextView) Viewlayout.findViewById(R.id.txtItem1); // txtItem1
         item1.setText("Volume");
-        final TextView item2 = (TextView)Viewlayout.findViewById(R.id.txtItem2); // txtItem2
+        final TextView item2 = (TextView) Viewlayout.findViewById(R.id.txtItem2); // txtItem2
         item2.setText("Bass");
         popDialog.setTitle("Equalizer");
         popDialog.setView(Viewlayout);
-
-        //  seekBar1
         SeekBar seek1 = (SeekBar) Viewlayout.findViewById(R.id.seekBar1);
         seek1.setProgress(vol);
         seek1.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
-                //Do something here with new value
-                vol=progress;
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                vol = progress;
             }
 
             public void onStartTrackingTouch(SeekBar arg0) {
@@ -156,45 +140,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             public void onStopTrackingTouch(SeekBar seekBar) {
                 // TODO Auto-generated method stub
-                try
-                {
-                    new Task().execute(vol,bas,play);
-                }
-                catch(Exception ex)
-                {
+                try {
+                    send(String.valueOf(vol),String.valueOf(bas),play);
+                } catch (Exception ex) {
                 }
 
             }
         });
 
-        //  seekBar2
         SeekBar seek2 = (SeekBar) Viewlayout.findViewById(R.id.seekBar2);
         seek2.setProgress(bas);
         seek2.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
-                //Do something here with new value
-                bas=progress;
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                bas = progress;
             }
 
             public void onStartTrackingTouch(SeekBar arg0) {
                 // TODO Auto-generated method stub
-
             }
 
             public void onStopTrackingTouch(SeekBar seekBar) {
                 // TODO Auto-generated method stub
-                try
-                {
-                    new Task().execute(vol,bas,play);
-                }
-                catch(Exception ex)
-                {
+                try {
+                    send(String.valueOf(vol),String.valueOf(bas),play);
+                } catch (Exception ex) {
                 }
             }
         });
-
-
-        // Button OK
         popDialog.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
@@ -202,11 +174,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
 
                 });
-
-
         popDialog.create();
         popDialog.show();
-
     }
 
     @Override
@@ -239,9 +208,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onPause();
 
     }
+
     @Override
-    public void onDestroy(){
-        if(server != null) {
+    public void onDestroy() {
+        if (server != null) {
             server.stop();
         }
         super.onDestroy();
@@ -250,45 +220,77 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        cur=position;
-        String stuff=(String)parent.getItemAtPosition(position);
+        cur = position;
+        String stuff = (String) parent.getItemAtPosition(position);
         try {
-            server.PATH=path+"/"+stuff;
-            server = new MyServer(path+"/"+stuff);
+            textView.setText("Now Playing: " + names.get(cur));
+            MyServer.PATH = list.get(cur);
+            server = new MyServer(list.get(cur));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Toast.makeText(this,path+"/"+stuff,Toast.LENGTH_SHORT).show();
     }
-    private class Task extends AsyncTask {
 
-
-        @Override
-        protected Object doInBackground(Object[] params) {
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.prev) {
+            if (cur == 0)
+                cur = max - 1;
+            else
+                cur--;
             try {
-
-                HttpClient Client = new DefaultHttpClient();
-                String URL = "http://192.168.4.1/?volume=" + params[0] + "&bass=" + params[1] +"&play="+params[2];
-                try
-                {
-                    String SetServerString = "";
-
-                    // Create Request to server and get response
-
-                    HttpGet httpget = new HttpGet(URL);
-                    ResponseHandler<String> responseHandler = new BasicResponseHandler();
-                    SetServerString = Client.execute(httpget, responseHandler);
-
-                    Toast.makeText(getApplicationContext(), "Selected: " + SetServerString, Toast.LENGTH_LONG).show();
-                }
-                catch(Exception ex)
-                {
-                    Toast.makeText(getApplicationContext(), ex.toString(), Toast.LENGTH_SHORT).show();
-
-                }
+                MyServer.PATH = list.get(cur);
+                server = new MyServer(list.get(cur));
+                textView.setText("Now Playing: " + names.get(cur));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            catch (Exception ex){}
-            return null;
+        } else if (v.getId() == R.id.play) {
+            try {
+                if (play.equals("true")) {
+                    play = "false";
+                    pp.setText("PLAY");
+                    textView.setText("Paused");
+                } else {
+                    play = "true";
+                    textView.setText("Now Playing: " + names.get(cur));
+                    pp.setText("PAUSE");
+                }
+                send(String.valueOf(vol),String.valueOf(bas),play);
+            } catch (Exception ex) {
+            }
+        } else if (v.getId() == R.id.next) {
+            if (cur == max - 1)
+                cur = 0;
+            else
+                cur++;
+            try {
+                MyServer.PATH = list.get(cur);
+                server = new MyServer(list.get(cur));
+                textView.setText("Now Playing: " + names.get(cur));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            showDialog();
         }
     }
+    public void send(String ...par){
+        com.android.volley.RequestQueue queue = Volley.newRequestQueue(this);
+        String url ="http://192.168.4.1?volume="+par[0]+"&bass="+par[1]+"&play="+par[2];
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        queue.add(stringRequest);
+    }
 }
+
