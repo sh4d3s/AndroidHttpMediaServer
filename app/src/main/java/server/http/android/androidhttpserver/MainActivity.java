@@ -1,7 +1,9 @@
 package server.http.android.androidhttpserver;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -53,6 +55,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        int config = sharedPref.getInt("config", 0);
+        /*if(config==0){
+            Intent intent = new Intent(this, Config1.class);
+            startActivity(intent);
+        }*/
         eqi = (Button) findViewById(R.id.eqi);
         pp = (Button) findViewById(R.id.play);
         next = (Button) findViewById(R.id.next);
@@ -194,6 +202,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         int id = item.getItemId();
         if (id == R.id.action_settings) {
             Intent intent = new Intent(this, Config1.class);
+            startActivity(intent);
+        }
+        if (id == R.id.devices) {
+            Intent intent = new Intent(this, Devices.class);
             startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
