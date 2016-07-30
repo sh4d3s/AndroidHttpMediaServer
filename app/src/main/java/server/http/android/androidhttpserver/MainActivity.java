@@ -1,6 +1,7 @@
 package server.http.android.androidhttpserver;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     List<String> names;
     List<String> list;
     TextView textView;
+    static String homeSSID;
+    static String homePass;
+    static String mobileIP;
+    static String mobilePort;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -188,7 +193,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent = new Intent(this, Config1.class);
+            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
     }
